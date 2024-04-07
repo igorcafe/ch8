@@ -6,6 +6,389 @@ import (
 	"math/rand"
 )
 
+type instruction struct {
+	id   string
+	asm  string
+	x    uint8
+	y    uint8
+	b    uint8
+	n    uint8
+	addr uint16
+	args []any
+}
+
+func parseOpcode(op uint16) instruction {
+	// 00E0 - CLS
+	if op == 0x00E0 {
+		return instruction{
+			id:  "CLS",
+			asm: "CLS",
+		}
+	}
+
+	// 00EE - RET
+	if op == 0x00EE {
+		return instruction{
+			id:  "RET",
+			asm: "RET",
+		}
+	}
+
+	// 0nnn - SYS addr
+	if op&0xF000 == 0x0000 {
+		addr := op & 0x0FFF
+		return instruction{
+			id:   "SYS addr",
+			asm:  fmt.Sprintf("SYS %04X", addr),
+			args: []any{addr},
+			addr: addr,
+		}
+	}
+
+	// 1nnn - JP addr
+	if op&0xF000 == 0x1000 {
+		addr := op & 0x0FFF
+		return instruction{
+			id:   "JP addr",
+			asm:  fmt.Sprintf("JP %04X", addr),
+			args: []any{addr},
+			addr: addr,
+		}
+	}
+
+	// 2nnn - CALL addr
+	if op&0xF000 == 0x2000 {
+		addr := op & 0x0FFF
+		return instruction{
+			id:   "CALL addr",
+			asm:  fmt.Sprintf("CALL %04X", addr),
+			args: []any{addr},
+			addr: addr,
+		}
+	}
+
+	// 3xkk - SE Vx, byte
+	if op&0xF000 == 0x3000 {
+		x := uint8((op & 0x0F00) >> 8)
+		b := uint8(op & 0x00FF)
+		return instruction{
+			id:   "SE Vx, byte",
+			asm:  fmt.Sprintf("SE V%01X, %02X", x, b),
+			args: []any{x, b},
+			x:    x,
+			b:    b,
+		}
+	}
+
+	// 4xkk - SNE Vx, byte
+	if op&0xF000 == 0x4000 {
+		x := uint8((op >> 8) & 0xF)
+		b := uint8(op & 0xFF)
+		return instruction{
+			id:   "SNE Vx, byte",
+			asm:  fmt.Sprintf("SNE V%01X, %02X", x, b),
+			args: []any{x, b},
+			x:    x,
+			b:    b,
+		}
+	}
+
+	// 5xy0 - SE Vx, Vy
+	if op&0xF000 == 0x5000 {
+		x := uint8((op >> 8) & 0xF)
+		y := uint8((op >> 4) & 0xF)
+		return instruction{
+			id:   "SE Vx, Vy",
+			asm:  fmt.Sprintf("SE V%01X, V%01X", x, y),
+			args: []any{x, y},
+		}
+	}
+
+	// 6xkk - LD Vx, byte
+	if op&0xF000 == 0x6000 {
+		x := uint8((op >> 8) & 0xF)
+		b := uint8(op & 0xFF)
+		return instruction{
+			id:   "LD Vx, byte",
+			asm:  fmt.Sprintf("LD V%01X, %02X", x, b),
+			args: []any{x, b},
+			x:    x,
+			b:    b,
+		}
+	}
+
+	// 7xkk - ADD Vx, byte
+	if op&0xF000 == 0x7000 {
+		x := uint8((op >> 8) & 0xF)
+		b := uint8(op & 0xFF)
+		return instruction{
+			id:   "ADD Vx, byte",
+			asm:  fmt.Sprintf("ADD V%01X, %02X", x, b),
+			args: []any{x, b},
+			x:    x,
+			b:    b,
+		}
+	}
+
+	// 8xy1 - OR Vx, Vy
+	if op&0xF00F == 0x8001 {
+		x := uint8((op >> 8) & 0xF)
+		y := uint8((op >> 4) & 0xF)
+		return instruction{
+			id:   "OR Vx, Vy",
+			asm:  fmt.Sprintf("OR V%01X, V%01X", x, y),
+			args: []any{x, y},
+		}
+	}
+
+	// 8xy2 - AND Vx, Vy
+	if op&0xF00F == 0x8002 {
+		x := uint8((op >> 8) & 0xF)
+		y := uint8((op >> 4) & 0xF)
+		return instruction{
+			id:   "AND Vx, Vy",
+			asm:  fmt.Sprintf("AND V%01X, V%01X", x, y),
+			args: []any{x, y},
+		}
+	}
+
+	// 8xy3 - XOR Vx, Vy
+	if op&0xF00F == 0x8003 {
+		x := uint8((op >> 8) & 0xF)
+		y := uint8((op >> 4) & 0xF)
+		return instruction{
+			id:   "XOR Vx, Vy",
+			asm:  fmt.Sprintf("XOR V%01X, V%01X", x, y),
+			args: []any{x, y},
+		}
+	}
+
+	// 8xy4 - ADD Vx, Vy
+	if op&0xF00F == 0x8004 {
+		x := uint8((op >> 8) & 0xF)
+		y := uint8((op >> 4) & 0xF)
+		return instruction{
+			id:   "ADD Vx, Vy",
+			asm:  fmt.Sprintf("ADD V%01X, V%01X", x, y),
+			args: []any{x, y},
+		}
+	}
+
+	// 8xy5 - SUB Vx, Vy
+	if op&0xF00F == 0x8005 {
+		x := uint8((op >> 8) & 0xF)
+		y := uint8((op >> 4) & 0xF)
+		return instruction{
+			id:   "SUB Vx, Vy",
+			asm:  fmt.Sprintf("SUB V%01X, V%01X", x, y),
+			args: []any{x, y},
+		}
+	}
+
+	// 8xy6 - SHR Vx
+	if op&0xF00F == 0x8006 {
+		x := uint8((op >> 8) & 0xF)
+		_ = uint8((op >> 4) & 0xF)
+		return instruction{
+			id:   "SHR Vx",
+			asm:  fmt.Sprintf("SUB V%01X", x),
+			args: []any{x},
+		}
+	}
+
+	// 8xy7 - SUBN Vx, Vy
+	if op&0xF00F == 0x8007 {
+		x := uint8((op >> 8) & 0xF)
+		y := uint8((op >> 4) & 0xF)
+		return instruction{
+			id:   "SUBN Vx, Vy",
+			asm:  fmt.Sprintf("SUBN V%01X, V%01X", x, y),
+			args: []any{x, y},
+		}
+	}
+
+	// 8xyE - SHL Vx
+	if op&0xF00F == 0x800E {
+		x := uint8((op >> 8) & 0xF)
+		_ = uint8((op >> 4) & 0xF)
+		return instruction{
+			id:   "SHL Vx",
+			asm:  fmt.Sprintf("SHL V%01X", x),
+			args: []any{x},
+		}
+	}
+
+	// 9xy0 - SNE Vx, Vy
+	if op&0xF000 == 0x9000 {
+		x := uint8((op >> 8) & 0xF)
+		y := uint8((op >> 4) & 0xF)
+		return instruction{
+			id:   "SNE Vx, Vy",
+			asm:  fmt.Sprintf("SNE V%01X, V%01X", x, y),
+			args: []any{x, y},
+		}
+	}
+
+	// Annn - LD I, addr
+	if op&0xF000 == 0xA000 {
+		addr := op & 0xFFF
+		return instruction{
+			id:   "LD I, addr",
+			asm:  fmt.Sprintf("LD I, %04X", addr),
+			args: []any{addr},
+			addr: addr,
+		}
+	}
+
+	// Bnnn - JP V0, addr
+	if op&0xF000 == 0xA000 {
+		addr := op & 0xFFF
+		return instruction{
+			id:   "JP V0, addr",
+			asm:  fmt.Sprintf("JP V0, %04X", addr),
+			args: []any{addr},
+			addr: addr,
+		}
+	}
+
+	// Cxkk - RND Vx, byte
+	if op&0xF000 == 0xA000 {
+		x := uint8((op >> 8) & 0xF)
+		b := uint8(op & 0xFF)
+		return instruction{
+			id:   "RND Vx, byte",
+			asm:  fmt.Sprintf("RND V%01X, %02X", x, b),
+			args: []any{x, b},
+			x:    x,
+			b:    b,
+		}
+	}
+
+	// Dxyn - DRW, Vx, Vy, nibble
+	if op&0xF000 == 0xD000 {
+		x := (op & 0x0F00) >> 8
+		y := (op & 0x00F0) >> 4
+		n := op & 0x000F
+		return instruction{
+			id:   "DRW Vx, Vy, nibble",
+			asm:  fmt.Sprintf("DRW V%01X, V%01X, %d", x, y, n),
+			args: []any{x, y, n},
+		}
+	}
+
+	// Ex9E - SKP Vx
+	if op&0xF00F == 0xE00E {
+		x := uint8((op >> 8) & 0xF)
+		return instruction{
+			id:   "SKP Vx",
+			asm:  fmt.Sprintf("SKP V%01X", x),
+			args: []any{x},
+		}
+	}
+
+	// ExA1 - SKNP Vx
+	if op&0xF00F == 0xE001 {
+		x := uint8((op >> 8) & 0xF)
+		return instruction{
+			id:   "SKNP Vx",
+			asm:  fmt.Sprintf("SKNP V%01X", x),
+			args: []any{x},
+		}
+	}
+
+	// Fx07 - LD Vx, DT
+	if op&0xF0FF == 0xF007 {
+		x := uint8((op >> 8) & 0xF)
+		return instruction{
+			id:   "LD Vx, DT",
+			asm:  fmt.Sprintf("LD V%01X, DT", x),
+			args: []any{x},
+		}
+	}
+
+	// Fx0A - LD Vx, K
+	if op&0xF0FF == 0xF00A {
+		x := uint8((op >> 8) & 0xF)
+		return instruction{
+			id:   "LD Vx, K",
+			asm:  fmt.Sprintf("LD V%01X, K", x),
+			args: []any{x},
+		}
+	}
+
+	// Fx15 - LD DT, Vx
+	if op&0xF0FF == 0xF015 {
+		x := uint8((op >> 8) & 0xF)
+		return instruction{
+			id:   "LD DT, Vx",
+			asm:  fmt.Sprintf("LD DT, V%01X", x),
+			args: []any{x},
+		}
+	}
+
+	// Fx18 - LD ST, Vx
+	if op&0xF0FF == 0xF018 {
+		x := uint8((op >> 8) & 0xF)
+		return instruction{
+			id:   "LD ST, Vx",
+			asm:  fmt.Sprintf("LD ST, V%01X", x),
+			args: []any{x},
+		}
+	}
+
+	// Fx1E - ADD I, Vx
+	if op&0xF0FF == 0xF01E {
+		x := uint8((op >> 8) & 0xF)
+		return instruction{
+			id:   "ADD I, Vx",
+			asm:  fmt.Sprintf("ADD I, V%01X", x),
+			args: []any{x},
+		}
+	}
+
+	// Fx29 - LD F, Vx
+	if op&0xF0FF == 0xF029 {
+		x := uint8((op >> 8) & 0xF)
+		return instruction{
+			id:   "LD F, Vx",
+			asm:  fmt.Sprintf("LD F, V%01X", x),
+			args: []any{x},
+		}
+	}
+
+	// Fx33 - LD B, Vx
+	if op&0xF0FF == 0xF033 {
+		x := uint8((op >> 8) & 0xF)
+		return instruction{
+			id:   "LD B, Vx",
+			asm:  fmt.Sprintf("LD B, V%01X", x),
+			args: []any{x},
+		}
+	}
+
+	// Fx55 - LD [I], Vx
+	if op&0xF0FF == 0xF055 {
+		x := uint8((op >> 8) & 0xF)
+		return instruction{
+			id:   "LD [I], Vx",
+			asm:  fmt.Sprintf("LD [I], V%01X", x),
+			args: []any{x},
+		}
+	}
+
+	// Fx65 - LD Vx, [I]
+	if op&0xF0FF == 0xF065 {
+		x := uint8((op >> 8) & 0xF)
+		return instruction{
+			id:   "LD Vx, [I]",
+			asm:  fmt.Sprintf("LD V%01X, [I]", x),
+			args: []any{x},
+		}
+	}
+
+	return instruction{}
+}
+
 // 0nnn - SYS addr
 // Jump to a machine code routine at nnn.
 //
@@ -309,7 +692,7 @@ func (c *chip8) jpV0Addr(addr uint16) {
 // Set Vx = random byte AND kk.
 //
 // The interpreter generates a random number from 0 to 255, which is then ANDed with the value kk. The results are stored in Vx. See instruction 8xy2 for more information on AND.
-func (c *chip8) rnd(x, b uint8) {
+func (c *chip8) rndVxB(x, b uint8) {
 	c.print("RND V%01X, %d", x, b)
 	c.v[x] = uint8(rand.Uint32()%256) & b
 }
@@ -325,7 +708,7 @@ func (c *chip8) rnd(x, b uint8) {
 // it wraps around to the opposite side of the screen.
 // See instruction 8xy3 for more information on XOR, and section 2.4, Display, for more
 // information on the Chip-8 screen and sprites.
-func (c *chip8) drwVxVyN(x, y, n uint16) {
+func (c *chip8) drwVxVyN(x, y, n uint8) {
 	c.print("DRW V%01X, %01X, %d", x, y, n)
 	// TODO
 	c.v[0xF] = 0

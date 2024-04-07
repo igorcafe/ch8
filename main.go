@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"flag"
 	"fmt"
 	"log"
 	"math/rand"
@@ -10,6 +11,10 @@ import (
 )
 
 func main() {
+	var step bool
+	flag.BoolVar(&step, "step", false, "")
+	flag.Parse()
+
 	c := newChip8()
 	log.SetFlags(0)
 
@@ -29,11 +34,15 @@ func main() {
 	scanner := bufio.NewScanner(os.Stdin)
 	for {
 		c.step()
-		scanner.Scan()
+		if step {
+			scanner.Scan()
+		}
 
 		// c.drawToTerminal()
 		// time.Sleep(time.Millisecond)
 	}
+
+	scanner.Scan()
 }
 
 var fontSet = []byte{
@@ -99,263 +108,85 @@ func (c *chip8) step() {
 	hi, lo := c.ram[c.pc], c.ram[c.pc+1]
 	op := uint16(hi)<<8 | uint16(lo)
 
-	// log.Printf("op: %04X", op)
+	in := parseOpcode(op)
+	if in.id == "" {
+		fmt.Printf("unknown opcode %04x, skipping\n", op)
+		c.pc += 2
+		return
+	}
 
-	// 00E0 - CLS
-	if op == 0x00E0 {
+	log.Print("\033[1;33m" + in.asm + "\033[0m")
+
+	switch in.id {
+	default:
+		log.Panicf("unknown instruction: %04X, %#v", op, in)
+	case "SYS addr":
+		c.sysAddr(in.addr)
+	case "CLS":
 		c.cls()
-		return
-	}
-
-	// 00EE - RET
-	if op == 0x00EE {
+	case "RET":
 		c.ret()
-		return
+	case "JP addr":
+		c.jpAddr(in.addr)
+	case "CALL addr":
+		c.callAddr(in.addr)
+	case "SE Vx, byte":
+		c.seVxB(in.x, in.b)
+	case "SNE Vx, byte":
+		c.sneVxB(in.x, in.b)
+	case "SE Vx, Vy":
+		c.seVxVy(in.x, in.y)
+	case "LD Vx, byte":
+		c.ldVxB(in.x, in.b)
+	case "ADD Vx, byte":
+		c.addVxB(in.x, in.b)
+	case "OR Vx, Vy":
+		c.orVxVy(in.x, in.y)
+	case "AND Vx, Vy":
+		c.andVxVy(in.x, in.y)
+	case "ADD Vx, Vy":
+		c.addVxVy(in.x, in.y)
+	case "SUB Vx, Vy":
+		c.subVxVy(in.x, in.y)
+	case "SHR Vx":
+		c.shrVx(in.x)
+	case "SUBN Vx, Vy":
+		c.subnVxVy(in.x, in.y)
+	case "SHL Vx":
+		c.shlVx(in.x)
+	case "SNE Vx, Vy":
+		c.sneVxVy(in.x, in.y)
+	case "LD I, addr":
+		c.ldIAddr(in.addr)
+	case "JP V0, addr":
+		c.jpV0Addr(in.addr)
+	case "RND Vx, byte":
+		c.rndVxB(in.x, in.b)
+	case "DRW Vx, Vy, nibble":
+		c.drwVxVyN(in.x, in.y, in.n)
+	case "SKP Vx":
+		c.skpVx(in.x)
+	case "SKNP Vx":
+		c.sknpVx(in.x)
+	case "LD Vx, DT":
+		c.ldVxDT(in.x)
+	case "LD Vx, K":
+		c.ldVxK(in.x)
+	case "LD DT, Vx":
+		c.ldDTVx(in.x)
+	case "LD ST, Vx":
+		c.ldSTVx(in.x)
+	case "ADD I, Vx":
+		c.addIVx(in.x)
+	case "LD F, Vx":
+		c.ldFVx(in.x)
+	case "LD B, Vx":
+		c.ldBVx(in.x)
+	case "LD [I], Vx":
+		c.ldIVx(in.x)
+	case "LD Vx, [I]":
+		c.ldVxI(in.x)
 	}
-
-	// 0nnn - SYS addr
-	if op&0xF000 == 0x0000 {
-		addr := op & 0x0FFF
-		c.sysAddr(addr)
-		return
-	}
-
-	// 1nnn - JP addr
-	if op&0xF000 == 0x1000 {
-		addr := op & 0x0FFF
-		c.jpAddr(addr)
-		return
-	}
-
-	// 2nnn - CALL addr
-	if op&0xF000 == 0x2000 {
-		addr := op & 0x0FFF
-		c.callAddr(addr)
-		return
-	}
-
-	// 3xkk - SE Vx, byte
-	if op&0xF000 == 0x3000 {
-		x := uint8((op & 0x0F00) >> 8)
-		b := uint8(op & 0x00FF)
-		c.seVxB(x, b)
-		return
-	}
-
-	// 4xkk - SNE Vx, byte
-	if op&0xF000 == 0x4000 {
-		x := uint8((op >> 8) & 0xF)
-		b := uint8(op & 0xFF)
-		c.sneVxB(x, b)
-		return
-	}
-
-	// 5xy0 - SE Vx, Vy
-	if op&0xF000 == 0x5000 {
-		x := uint8((op >> 8) & 0xF)
-		y := uint8((op >> 4) & 0xF)
-		c.seVxVy(x, y)
-		return
-	}
-
-	// 6xkk - LD Vx, byte
-	if op&0xF000 == 0x6000 {
-		x := uint8((op >> 8) & 0xF)
-		b := uint8(op & 0xFF)
-		c.ldVxB(x, b)
-		return
-	}
-
-	// 7xkk - ADD Vx, byte
-	if op&0xF000 == 0x7000 {
-		x := uint8((op >> 8) & 0xF)
-		b := uint8(op & 0xFF)
-		c.addVxB(x, b)
-		return
-	}
-
-	// 8xy1 - OR Vx, Vy
-	if op&0xF00F == 0x8001 {
-		x := uint8((op >> 8) & 0xF)
-		y := uint8((op >> 4) & 0xF)
-		c.orVxVy(x, y)
-		return
-	}
-
-	// 8xy2 - AND Vx, Vy
-	if op&0xF00F == 0x8002 {
-		x := uint8((op >> 8) & 0xF)
-		y := uint8((op >> 4) & 0xF)
-		c.andVxVy(x, y)
-		return
-	}
-
-	// 8xy3 - XOR Vx, Vy
-	if op&0xF00F == 0x8003 {
-		x := uint8((op >> 8) & 0xF)
-		y := uint8((op >> 4) & 0xF)
-		c.xorVxVy(x, y)
-		return
-	}
-
-	// 8xy4 - ADD Vx, Vy
-	if op&0xF00F == 0x8004 {
-		x := uint8((op >> 8) & 0xF)
-		y := uint8((op >> 4) & 0xF)
-		c.addVxVy(x, y)
-		return
-	}
-
-	// 8xy5 - SUB Vx, Vy
-	if op&0xF00F == 0x8005 {
-		x := uint8((op >> 8) & 0xF)
-		y := uint8((op >> 4) & 0xF)
-		c.subVxVy(x, y)
-		return
-	}
-
-	// 8xy6 - SHR Vx
-	if op&0xF00F == 0x8006 {
-		x := uint8((op >> 8) & 0xF)
-		_ = uint8((op >> 4) & 0xF)
-		c.shrVx(x)
-		return
-	}
-
-	// 8xy7 - SUBN Vx, Vy
-	if op&0xF00F == 0x8007 {
-		x := uint8((op >> 8) & 0xF)
-		y := uint8((op >> 4) & 0xF)
-		c.subnVxVy(x, y)
-		return
-	}
-
-	// 8xyE - SHL Vx
-	if op&0xF00F == 0x800E {
-		x := uint8((op >> 8) & 0xF)
-		_ = uint8((op >> 4) & 0xF)
-		c.shlVx(x)
-		return
-	}
-
-	// 9xy0 - SNE Vx, Vy
-	if op&0xF000 == 0x9000 {
-		x := uint8((op >> 8) & 0xF)
-		y := uint8((op >> 4) & 0xF)
-		c.sneVxVy(x, y)
-		return
-	}
-
-	// Annn - LD I, addr
-	if op&0xF000 == 0xA000 {
-		addr := op & 0xFFF
-		c.ldIAddr(addr)
-		return
-	}
-
-	// Bnnn - JP V0, addr
-	if op&0xF000 == 0xA000 {
-		addr := op & 0xFFF
-		c.jpV0Addr(addr)
-		return
-	}
-
-	// Cxkk - RND Vx, byte
-	if op&0xF000 == 0xA000 {
-		x := uint8((op >> 8) & 0xF)
-		b := uint8(op & 0xFF)
-		c.rnd(x, b)
-		return
-	}
-
-	// Dxyn - DRW, Vx, Vy, nibble
-	if op&0xF000 == 0xD000 {
-		x := (op & 0x0F00) >> 8
-		y := (op & 0x00F0) >> 4
-		n := op & 0x000F
-		c.drwVxVyN(x, y, n)
-		return
-	}
-
-	// Ex9E - SKP Vx
-	if op&0xF00F == 0xE00E {
-		x := uint8((op >> 8) & 0xF)
-		c.skpVx(x)
-		return
-	}
-
-	// ExA1 - SKNP Vx
-	if op&0xF00F == 0xE001 {
-		x := uint8((op >> 8) & 0xF)
-		c.sknpVx(x)
-		return
-	}
-
-	// Fx07 - LD Vx, DT
-	if op&0xF0FF == 0xF007 {
-		x := uint8((op >> 8) & 0xF)
-		c.ldVxDT(x)
-		return
-	}
-
-	// Fx0A - LD Vx, K
-	if op&0xF0FF == 0xF00A {
-		x := uint8((op >> 8) & 0xF)
-		c.ldVxK(x)
-		return
-	}
-
-	// Fx15 - LD DT, Vx
-	if op&0xF0FF == 0xF015 {
-		x := uint8((op >> 8) & 0xF)
-		c.ldDTVx(x)
-		return
-	}
-
-	// Fx18 - LD ST, Vx
-	if op&0xF0FF == 0xF018 {
-		x := uint8((op >> 8) & 0xF)
-		c.ldSTVx(x)
-		return
-	}
-
-	// Fx1E - ADD I, Vx
-	if op&0xF0FF == 0xF01E {
-		x := uint8((op >> 8) & 0xF)
-		c.addIVx(x)
-		return
-	}
-
-	// Fx29 - LD F, Vx
-	if op&0xF0FF == 0xF029 {
-		x := uint8((op >> 8) & 0xF)
-		c.ldFVx(x)
-		return
-	}
-
-	// Fx33 - LD B, Vx
-	if op&0xF0FF == 0xF033 {
-		x := uint8((op >> 8) & 0xF)
-		c.ldBVx(x)
-		return
-	}
-
-	// Fx55 - LD [I], Vx
-	if op&0xF0FF == 0xF055 {
-		x := uint8((op >> 8) & 0xF)
-		c.ldIVx(x)
-		return
-	}
-
-	// Fx65 - LD Vx, [I]
-	if op&0xF0FF == 0xF065 {
-		x := uint8((op >> 8) & 0xF)
-		c.ldVxI(x)
-		return
-	}
-
-	fmt.Printf("unknown opcode %04x, skipping\n", op)
-	c.pc += 2
 }
 
 func (c *chip8) drawToTerminal() {
