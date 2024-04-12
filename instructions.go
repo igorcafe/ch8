@@ -14,7 +14,6 @@ type instruction struct {
 	b    uint8
 	n    uint8
 	addr uint16
-	args []any
 }
 
 func parseOpcode(op uint16) instruction {
@@ -40,7 +39,6 @@ func parseOpcode(op uint16) instruction {
 		return instruction{
 			id:   "SYS addr",
 			asm:  fmt.Sprintf("SYS %04X", addr),
-			args: []any{addr},
 			addr: addr,
 		}
 	}
@@ -51,7 +49,6 @@ func parseOpcode(op uint16) instruction {
 		return instruction{
 			id:   "JP addr",
 			asm:  fmt.Sprintf("JP %04X", addr),
-			args: []any{addr},
 			addr: addr,
 		}
 	}
@@ -62,7 +59,6 @@ func parseOpcode(op uint16) instruction {
 		return instruction{
 			id:   "CALL addr",
 			asm:  fmt.Sprintf("CALL %04X", addr),
-			args: []any{addr},
 			addr: addr,
 		}
 	}
@@ -72,11 +68,10 @@ func parseOpcode(op uint16) instruction {
 		x := uint8((op & 0x0F00) >> 8)
 		b := uint8(op & 0x00FF)
 		return instruction{
-			id:   "SE Vx, byte",
-			asm:  fmt.Sprintf("SE V%01X, %02X", x, b),
-			args: []any{x, b},
-			x:    x,
-			b:    b,
+			id:  "SE Vx, byte",
+			asm: fmt.Sprintf("SE V%01X, %02X", x, b),
+			x:   x,
+			b:   b,
 		}
 	}
 
@@ -85,11 +80,10 @@ func parseOpcode(op uint16) instruction {
 		x := uint8((op >> 8) & 0xF)
 		b := uint8(op & 0xFF)
 		return instruction{
-			id:   "SNE Vx, byte",
-			asm:  fmt.Sprintf("SNE V%01X, %02X", x, b),
-			args: []any{x, b},
-			x:    x,
-			b:    b,
+			id:  "SNE Vx, byte",
+			asm: fmt.Sprintf("SNE V%01X, %02X", x, b),
+			x:   x,
+			b:   b,
 		}
 	}
 
@@ -98,9 +92,8 @@ func parseOpcode(op uint16) instruction {
 		x := uint8((op >> 8) & 0xF)
 		y := uint8((op >> 4) & 0xF)
 		return instruction{
-			id:   "SE Vx, Vy",
-			asm:  fmt.Sprintf("SE V%01X, V%01X", x, y),
-			args: []any{x, y},
+			id:  "SE Vx, Vy",
+			asm: fmt.Sprintf("SE V%01X, V%01X", x, y),
 		}
 	}
 
@@ -109,11 +102,10 @@ func parseOpcode(op uint16) instruction {
 		x := uint8((op >> 8) & 0xF)
 		b := uint8(op & 0xFF)
 		return instruction{
-			id:   "LD Vx, byte",
-			asm:  fmt.Sprintf("LD V%01X, %02X", x, b),
-			args: []any{x, b},
-			x:    x,
-			b:    b,
+			id:  "LD Vx, byte",
+			asm: fmt.Sprintf("LD V%01X, %02X", x, b),
+			x:   x,
+			b:   b,
 		}
 	}
 
@@ -122,11 +114,22 @@ func parseOpcode(op uint16) instruction {
 		x := uint8((op >> 8) & 0xF)
 		b := uint8(op & 0xFF)
 		return instruction{
-			id:   "ADD Vx, byte",
-			asm:  fmt.Sprintf("ADD V%01X, %02X", x, b),
-			args: []any{x, b},
-			x:    x,
-			b:    b,
+			id:  "ADD Vx, byte",
+			asm: fmt.Sprintf("ADD V%01X, %02X", x, b),
+			x:   x,
+			b:   b,
+		}
+	}
+
+	// 8xy0 - LD Vx, Vy
+	if op&0xF00F == 0x8000 {
+		x := uint8((op >> 8) & 0xF)
+		y := uint8((op >> 4) & 0xF)
+		return instruction{
+			id:  "LD Vx, Vy",
+			asm: fmt.Sprintf("LD V%01X, V%01X", x, y),
+			x:   x,
+			y:   y,
 		}
 	}
 
@@ -135,9 +138,10 @@ func parseOpcode(op uint16) instruction {
 		x := uint8((op >> 8) & 0xF)
 		y := uint8((op >> 4) & 0xF)
 		return instruction{
-			id:   "OR Vx, Vy",
-			asm:  fmt.Sprintf("OR V%01X, V%01X", x, y),
-			args: []any{x, y},
+			id:  "OR Vx, Vy",
+			asm: fmt.Sprintf("OR V%01X, V%01X", x, y),
+			x:   x,
+			y:   y,
 		}
 	}
 
@@ -146,9 +150,10 @@ func parseOpcode(op uint16) instruction {
 		x := uint8((op >> 8) & 0xF)
 		y := uint8((op >> 4) & 0xF)
 		return instruction{
-			id:   "AND Vx, Vy",
-			asm:  fmt.Sprintf("AND V%01X, V%01X", x, y),
-			args: []any{x, y},
+			id:  "AND Vx, Vy",
+			asm: fmt.Sprintf("AND V%01X, V%01X", x, y),
+			x:   x,
+			y:   y,
 		}
 	}
 
@@ -157,9 +162,10 @@ func parseOpcode(op uint16) instruction {
 		x := uint8((op >> 8) & 0xF)
 		y := uint8((op >> 4) & 0xF)
 		return instruction{
-			id:   "XOR Vx, Vy",
-			asm:  fmt.Sprintf("XOR V%01X, V%01X", x, y),
-			args: []any{x, y},
+			id:  "XOR Vx, Vy",
+			asm: fmt.Sprintf("XOR V%01X, V%01X", x, y),
+			x:   x,
+			y:   y,
 		}
 	}
 
@@ -168,9 +174,10 @@ func parseOpcode(op uint16) instruction {
 		x := uint8((op >> 8) & 0xF)
 		y := uint8((op >> 4) & 0xF)
 		return instruction{
-			id:   "ADD Vx, Vy",
-			asm:  fmt.Sprintf("ADD V%01X, V%01X", x, y),
-			args: []any{x, y},
+			id:  "ADD Vx, Vy",
+			asm: fmt.Sprintf("ADD V%01X, V%01X", x, y),
+			x:   x,
+			y:   y,
 		}
 	}
 
@@ -179,20 +186,22 @@ func parseOpcode(op uint16) instruction {
 		x := uint8((op >> 8) & 0xF)
 		y := uint8((op >> 4) & 0xF)
 		return instruction{
-			id:   "SUB Vx, Vy",
-			asm:  fmt.Sprintf("SUB V%01X, V%01X", x, y),
-			args: []any{x, y},
+			id:  "SUB Vx, Vy",
+			asm: fmt.Sprintf("SUB V%01X, V%01X", x, y),
+			x:   x,
+			y:   y,
 		}
 	}
 
 	// 8xy6 - SHR Vx
 	if op&0xF00F == 0x8006 {
 		x := uint8((op >> 8) & 0xF)
-		_ = uint8((op >> 4) & 0xF)
+		y := uint8((op >> 4) & 0xF)
 		return instruction{
-			id:   "SHR Vx",
-			asm:  fmt.Sprintf("SUB V%01X", x),
-			args: []any{x},
+			id:  "SHR Vx {, Vy}",
+			asm: fmt.Sprintf("SUB V%01X, {, V%01X}", x, y),
+			x:   x,
+			y:   y,
 		}
 	}
 
@@ -201,20 +210,22 @@ func parseOpcode(op uint16) instruction {
 		x := uint8((op >> 8) & 0xF)
 		y := uint8((op >> 4) & 0xF)
 		return instruction{
-			id:   "SUBN Vx, Vy",
-			asm:  fmt.Sprintf("SUBN V%01X, V%01X", x, y),
-			args: []any{x, y},
+			id:  "SUBN Vx, Vy",
+			asm: fmt.Sprintf("SUBN V%01X, V%01X", x, y),
+			x:   x,
+			y:   y,
 		}
 	}
 
-	// 8xyE - SHL Vx
+	// 8xyE - SHL Vx{, Vy}
 	if op&0xF00F == 0x800E {
 		x := uint8((op >> 8) & 0xF)
-		_ = uint8((op >> 4) & 0xF)
+		y := uint8((op >> 4) & 0xF)
 		return instruction{
-			id:   "SHL Vx",
-			asm:  fmt.Sprintf("SHL V%01X", x),
-			args: []any{x},
+			id:  "SHL Vx {, Vy}",
+			asm: fmt.Sprintf("SHL V%01X {, V%01X}", x, y),
+			x:   x,
+			y:   y,
 		}
 	}
 
@@ -223,9 +234,10 @@ func parseOpcode(op uint16) instruction {
 		x := uint8((op >> 8) & 0xF)
 		y := uint8((op >> 4) & 0xF)
 		return instruction{
-			id:   "SNE Vx, Vy",
-			asm:  fmt.Sprintf("SNE V%01X, V%01X", x, y),
-			args: []any{x, y},
+			id:  "SNE Vx, Vy",
+			asm: fmt.Sprintf("SNE V%01X, V%01X", x, y),
+			x:   x,
+			y:   y,
 		}
 	}
 
@@ -235,7 +247,6 @@ func parseOpcode(op uint16) instruction {
 		return instruction{
 			id:   "LD I, addr",
 			asm:  fmt.Sprintf("LD I, %04X", addr),
-			args: []any{addr},
 			addr: addr,
 		}
 	}
@@ -246,7 +257,6 @@ func parseOpcode(op uint16) instruction {
 		return instruction{
 			id:   "JP V0, addr",
 			asm:  fmt.Sprintf("JP V0, %04X", addr),
-			args: []any{addr},
 			addr: addr,
 		}
 	}
@@ -256,11 +266,10 @@ func parseOpcode(op uint16) instruction {
 		x := uint8((op >> 8) & 0xF)
 		b := uint8(op & 0xFF)
 		return instruction{
-			id:   "RND Vx, byte",
-			asm:  fmt.Sprintf("RND V%01X, %02X", x, b),
-			args: []any{x, b},
-			x:    x,
-			b:    b,
+			id:  "RND Vx, byte",
+			asm: fmt.Sprintf("RND V%01X, %02X", x, b),
+			x:   x,
+			b:   b,
 		}
 	}
 
@@ -270,9 +279,11 @@ func parseOpcode(op uint16) instruction {
 		y := (op & 0x00F0) >> 4
 		n := op & 0x000F
 		return instruction{
-			id:   "DRW Vx, Vy, nibble",
-			asm:  fmt.Sprintf("DRW V%01X, V%01X, %d", x, y, n),
-			args: []any{x, y, n},
+			id:  "DRW Vx, Vy, nibble",
+			asm: fmt.Sprintf("DRW V%01X, V%01X, %d", x, y, n),
+			x:   uint8(x),
+			y:   uint8(y),
+			n:   uint8(n),
 		}
 	}
 
@@ -280,9 +291,9 @@ func parseOpcode(op uint16) instruction {
 	if op&0xF00F == 0xE00E {
 		x := uint8((op >> 8) & 0xF)
 		return instruction{
-			id:   "SKP Vx",
-			asm:  fmt.Sprintf("SKP V%01X", x),
-			args: []any{x},
+			id:  "SKP Vx",
+			asm: fmt.Sprintf("SKP V%01X", x),
+			x:   x,
 		}
 	}
 
@@ -290,9 +301,9 @@ func parseOpcode(op uint16) instruction {
 	if op&0xF00F == 0xE001 {
 		x := uint8((op >> 8) & 0xF)
 		return instruction{
-			id:   "SKNP Vx",
-			asm:  fmt.Sprintf("SKNP V%01X", x),
-			args: []any{x},
+			id:  "SKNP Vx",
+			asm: fmt.Sprintf("SKNP V%01X", x),
+			x:   x,
 		}
 	}
 
@@ -300,9 +311,9 @@ func parseOpcode(op uint16) instruction {
 	if op&0xF0FF == 0xF007 {
 		x := uint8((op >> 8) & 0xF)
 		return instruction{
-			id:   "LD Vx, DT",
-			asm:  fmt.Sprintf("LD V%01X, DT", x),
-			args: []any{x},
+			id:  "LD Vx, DT",
+			asm: fmt.Sprintf("LD V%01X, DT", x),
+			x:   x,
 		}
 	}
 
@@ -310,9 +321,9 @@ func parseOpcode(op uint16) instruction {
 	if op&0xF0FF == 0xF00A {
 		x := uint8((op >> 8) & 0xF)
 		return instruction{
-			id:   "LD Vx, K",
-			asm:  fmt.Sprintf("LD V%01X, K", x),
-			args: []any{x},
+			id:  "LD Vx, K",
+			asm: fmt.Sprintf("LD V%01X, K", x),
+			x:   x,
 		}
 	}
 
@@ -320,9 +331,9 @@ func parseOpcode(op uint16) instruction {
 	if op&0xF0FF == 0xF015 {
 		x := uint8((op >> 8) & 0xF)
 		return instruction{
-			id:   "LD DT, Vx",
-			asm:  fmt.Sprintf("LD DT, V%01X", x),
-			args: []any{x},
+			id:  "LD DT, Vx",
+			asm: fmt.Sprintf("LD DT, V%01X", x),
+			x:   x,
 		}
 	}
 
@@ -330,9 +341,9 @@ func parseOpcode(op uint16) instruction {
 	if op&0xF0FF == 0xF018 {
 		x := uint8((op >> 8) & 0xF)
 		return instruction{
-			id:   "LD ST, Vx",
-			asm:  fmt.Sprintf("LD ST, V%01X", x),
-			args: []any{x},
+			id:  "LD ST, Vx",
+			asm: fmt.Sprintf("LD ST, V%01X", x),
+			x:   x,
 		}
 	}
 
@@ -340,9 +351,9 @@ func parseOpcode(op uint16) instruction {
 	if op&0xF0FF == 0xF01E {
 		x := uint8((op >> 8) & 0xF)
 		return instruction{
-			id:   "ADD I, Vx",
-			asm:  fmt.Sprintf("ADD I, V%01X", x),
-			args: []any{x},
+			id:  "ADD I, Vx",
+			asm: fmt.Sprintf("ADD I, V%01X", x),
+			x:   x,
 		}
 	}
 
@@ -350,9 +361,9 @@ func parseOpcode(op uint16) instruction {
 	if op&0xF0FF == 0xF029 {
 		x := uint8((op >> 8) & 0xF)
 		return instruction{
-			id:   "LD F, Vx",
-			asm:  fmt.Sprintf("LD F, V%01X", x),
-			args: []any{x},
+			id:  "LD F, Vx",
+			asm: fmt.Sprintf("LD F, V%01X", x),
+			x:   x,
 		}
 	}
 
@@ -360,9 +371,9 @@ func parseOpcode(op uint16) instruction {
 	if op&0xF0FF == 0xF033 {
 		x := uint8((op >> 8) & 0xF)
 		return instruction{
-			id:   "LD B, Vx",
-			asm:  fmt.Sprintf("LD B, V%01X", x),
-			args: []any{x},
+			id:  "LD B, Vx",
+			asm: fmt.Sprintf("LD B, V%01X", x),
+			x:   x,
 		}
 	}
 
@@ -370,9 +381,9 @@ func parseOpcode(op uint16) instruction {
 	if op&0xF0FF == 0xF055 {
 		x := uint8((op >> 8) & 0xF)
 		return instruction{
-			id:   "LD [I], Vx",
-			asm:  fmt.Sprintf("LD [I], V%01X", x),
-			args: []any{x},
+			id:  "LD [I], Vx",
+			asm: fmt.Sprintf("LD [I], V%01X", x),
+			x:   x,
 		}
 	}
 
@@ -380,13 +391,28 @@ func parseOpcode(op uint16) instruction {
 	if op&0xF0FF == 0xF065 {
 		x := uint8((op >> 8) & 0xF)
 		return instruction{
-			id:   "LD Vx, [I]",
-			asm:  fmt.Sprintf("LD V%01X, [I]", x),
-			args: []any{x},
+			id:  "LD Vx, [I]",
+			asm: fmt.Sprintf("LD V%01X, [I]", x),
+			x:   x,
 		}
 	}
 
 	return instruction{}
+}
+
+func (c *chip8) print(format string, args ...any) {
+	return
+	log.Printf("\033[1;33m"+format+"\033[0m", args...)
+	log.Printf("| PC: %04X |  I: %04X | RET: %03X | DT:   %02X | ST:   %02X | [I]: %02X", c.pc, c.i, c.stack[c.sp], c.dt, c.st, c.ram[c.i])
+	s := "|"
+	for i := 0; i < 8; i++ {
+		s += fmt.Sprintf(" V%01X:   %02X |", i, c.v[i])
+	}
+	s += "\n|"
+	for i := 8; i <= 0xF; i++ {
+		s += fmt.Sprintf(" V%01X:   %02X |", i, c.v[i])
+	}
+	log.Print(s)
 }
 
 // 0nnn - SYS addr
@@ -395,14 +421,12 @@ func parseOpcode(op uint16) instruction {
 // This instruction is only used on the old computers on which Chip-8
 // was originally implemented. It is ignored by modern interpreters.
 func (c *chip8) sysAddr(addr uint16) {
-	c.print("SYS %04X", addr)
 	c.pc = addr
 }
 
 // 00E0 - CLS
 // Clear the display.
 func (c *chip8) cls() {
-	c.print("CLS")
 	for x := range c.screen {
 		for y := range c.screen[x] {
 			c.screen[x][y] = false
@@ -416,55 +440,9 @@ func (c *chip8) cls() {
 //
 // The interpreter sets the program counter to the address at the top of the stack, then subtracts 1 from the stack pointer.
 func (c *chip8) ret() {
-	c.print("RET")
 	c.pc = c.stack[c.sp]
 	c.sp--
 	c.pc += 2
-}
-
-func (c *chip8) print(format string, args ...any) {
-	infos := []struct {
-		fmt   string
-		value any
-	}{
-		{"PC: %04X", c.pc},
-		{"I: %04X", c.i},
-		{"DT: %02X", c.dt},
-		{"ST: %02X\n", c.st},
-		{"V0: %02X", c.v[0x0]},
-		{"V1: %02X", c.v[0x1]},
-		{"V2: %02X", c.v[0x2]},
-		{"V3: %02X", c.v[0x3]},
-		{"V4: %02X", c.v[0x4]},
-		{"V5: %02X", c.v[0x5]},
-		{"V6: %02X", c.v[0x6]},
-		{"V7: %02X\n", c.v[0x7]},
-		{"V8: %02X", c.v[0x8]},
-		{"V9: %02X", c.v[0x9]},
-		{"VA: %02X", c.v[0xA]},
-		{"VB: %02X", c.v[0xB]},
-		{"VC: %02X", c.v[0xC]},
-		{"VD: %02X", c.v[0xD]},
-		{"VE: %02X", c.v[0xE]},
-		{"VF: %02X\n", c.v[0xF]},
-	}
-
-	format2 := "\n"
-	args2 := []any{}
-
-	for i, info := range infos {
-		if i != 0 {
-			format2 += " | "
-		}
-		format2 += info.fmt
-		args2 = append(args2, info.value)
-	}
-
-	state := fmt.Sprintf(
-		format2,
-		args2...,
-	)
-	log.Print(fmt.Sprintf("\033[1;33m"+format+"\033[0m", args...) + state)
 }
 
 // 1nnn - JP addr
@@ -472,7 +450,6 @@ func (c *chip8) print(format string, args ...any) {
 //
 // The interpreter sets the program counter to nnn.
 func (c *chip8) jpAddr(addr uint16) {
-	c.print("JP [%04X]", addr)
 	c.pc = addr
 }
 
@@ -482,7 +459,6 @@ func (c *chip8) jpAddr(addr uint16) {
 // The interpreter increments the stack pointer, then puts the current PC
 // on the top of the stack. The PC is then set to nnn.
 func (c *chip8) callAddr(addr uint16) {
-	c.print("CALL %04X", addr)
 	c.sp++
 	c.stack[c.sp] = c.pc
 	c.pc = addr
@@ -493,8 +469,7 @@ func (c *chip8) callAddr(addr uint16) {
 //
 // The interpreter compares register Vx to kk, and if they are equal, increments the program counter by 2.
 func (c *chip8) seVxB(x, b uint8) {
-	c.print("SE V%01X, %d", x, b)
-	if x == b {
+	if c.v[x] == b {
 		c.pc += 2
 	}
 	c.pc += 2
@@ -505,8 +480,7 @@ func (c *chip8) seVxB(x, b uint8) {
 //
 // The interpreter compares register Vx to kk, and if they are not equal, increments the program counter by 2.
 func (c *chip8) sneVxB(x, b uint8) {
-	c.print("SNE V%01X, %d", x, b)
-	if x != b {
+	if c.v[x] != b {
 		c.pc += 2
 	}
 	c.pc += 2
@@ -517,7 +491,6 @@ func (c *chip8) sneVxB(x, b uint8) {
 //
 // The interpreter compares register Vx to register Vy, and if they are equal, increments the program counter by 2.
 func (c *chip8) seVxVy(x, y uint8) {
-	c.print("SE V%01X, V%01X", x, y)
 	if c.v[x] == c.v[y] {
 		c.pc += 2
 	}
@@ -529,7 +502,6 @@ func (c *chip8) seVxVy(x, y uint8) {
 //
 // The interpreter puts the value kk into register Vx.
 func (c *chip8) ldVxB(x, b uint8) {
-	c.print("LD V%01X, %d", x, b)
 	c.v[x] = b
 	c.pc += 2
 }
@@ -542,7 +514,6 @@ func (c *chip8) ldVxB(x, b uint8) {
 //
 // Adds the value kk to the value of register Vx, then stores the result in Vx.
 func (c *chip8) addVxB(x, b uint8) {
-	c.print("ADD V%01X, %d", x, b)
 	c.v[x] += b
 	c.pc += 2
 }
@@ -551,7 +522,7 @@ func (c *chip8) addVxB(x, b uint8) {
 // Set Vx = Vy.
 //
 // Stores the value of register Vy in register Vx.
-func (c *chip8) ldReg(x, y uint8) {
+func (c *chip8) ldVxVy(x, y uint8) {
 	c.v[x] += c.v[y]
 	c.pc += 2
 }
@@ -563,7 +534,6 @@ func (c *chip8) ldReg(x, y uint8) {
 // A bitwise OR compares the corrseponding bits from two values, and if either bit
 // is 1, then the same bit in the result is also 1. Otherwise, it is 0.
 func (c *chip8) orVxVy(x, y uint8) {
-	c.print("OR V%01X, V%01X", x, y)
 	c.v[x] |= c.v[y]
 	c.pc += 2
 }
@@ -573,7 +543,6 @@ func (c *chip8) orVxVy(x, y uint8) {
 //
 // Performs a bitwise AND on the values of Vx andVxVy Vy, then stores the result in Vx. A bitwise AND compares the corrseponding bits from two values, andVxVy if both bits are 1, then the same bit in the result is also 1. Otherwise, it is 0.
 func (c *chip8) andVxVy(x, y uint8) {
-	c.print("AND V%01X, V%01X", x, y)
 	c.v[x] &= c.v[y]
 	c.pc += 2
 }
@@ -583,7 +552,6 @@ func (c *chip8) andVxVy(x, y uint8) {
 //
 // Performs a bitwise exclusive OR on the values of Vx and Vy, then stores the result in Vx. An exclusive OR compares the corrseponding bits from two values, and if the bits are not both the same, then the corresponding bit in the result is set to 1. Otherwise, it is 0.
 func (c *chip8) xorVxVy(x, y uint8) {
-	c.print("XOR V%01X, V%01X", x, y)
 	c.v[x] ^= c.v[y]
 	c.pc += 2
 }
@@ -593,7 +561,6 @@ func (c *chip8) xorVxVy(x, y uint8) {
 //
 // The values of Vx and Vy are added together. If the result is greater than 8 bits (i.e., > 255,) VF is set to 1, otherwise 0. Only the lowest 8 bits of the result are kept, and stored in Vx.
 func (c *chip8) addVxVy(x, y uint8) {
-	c.print("ADD V%01X, V%01X", x, y)
 	vx := c.v[x] + y
 	c.v[0xF] = 0
 	if vx < c.v[x] {
@@ -608,7 +575,6 @@ func (c *chip8) addVxVy(x, y uint8) {
 //
 // If Vx > Vy, then VF is set to 1, otherwise 0. Then Vy is subtracted from Vx, and the results stored in Vx.
 func (c *chip8) subVxVy(x, y uint8) {
-	c.print("SUB V%01X, V%01X", x, y)
 	c.v[0xF] = 0
 	if c.v[x] > c.v[y] {
 		c.v[0xF] = 1
@@ -622,12 +588,12 @@ func (c *chip8) subVxVy(x, y uint8) {
 //
 // If the least-significant bit of Vx is 1, then VF is set to 1, otherwise 0. Then Vx is divided by 2.
 func (c *chip8) shrVx(x uint8) {
-	c.print("SHR V%01X", x)
 	c.v[0xF] = 0
 	if c.v[x]&1 == 1 {
 		c.v[0xF] = 1
 	}
 	c.v[x] = c.v[x] >> 1
+	c.pc += 2
 }
 
 // 8xy7 - SUBN Vx, Vy
@@ -635,7 +601,6 @@ func (c *chip8) shrVx(x uint8) {
 //
 // If Vy > Vx, then VF is set to 1, otherwise 0. Then Vx is subtracted from Vy, and the results stored in Vx.
 func (c *chip8) subnVxVy(x, y uint8) {
-	c.print("SUBN V%01X, V%01X", x, y)
 	c.v[0xF] = 0
 	if c.v[y] > c.v[x] {
 		c.v[0xF] = 1
@@ -649,12 +614,12 @@ func (c *chip8) subnVxVy(x, y uint8) {
 //
 // If the most-significant bit of Vx is 1, then VF is set to 1, otherwise to 0. Then Vx is multiplied by 2.
 func (c *chip8) shlVx(x uint8) {
-	c.print("SHL V%01X", x)
 	c.v[0xF] = 0
 	if c.v[x]&0x80 == 1 {
 		c.v[0xF] = 1
 	}
 	c.v[x] = c.v[x] << 1
+	c.pc += 2
 }
 
 // 9xy0 - SNE Vx, Vy
@@ -662,7 +627,6 @@ func (c *chip8) shlVx(x uint8) {
 //
 // The values of Vx and Vy are compared, and if they are not equal, the program counter is increased by 2.
 func (c *chip8) sneVxVy(x, y uint8) {
-	c.print("SNE V%01X, V%01X", x, y)
 	if c.v[x] != c.v[y] {
 		c.pc += 2
 	}
@@ -674,7 +638,6 @@ func (c *chip8) sneVxVy(x, y uint8) {
 //
 // The value of register I is set to nnn.
 func (c *chip8) ldIAddr(addr uint16) {
-	c.print("LD I, %04X", addr)
 	c.i = addr
 	c.pc += 2
 }
@@ -684,7 +647,6 @@ func (c *chip8) ldIAddr(addr uint16) {
 //
 // The program counter is set to nnn plus the value of V0.
 func (c *chip8) jpV0Addr(addr uint16) {
-	c.print("JP V0, %04X", addr)
 	c.pc = addr + uint16(c.v[0])
 }
 
@@ -693,7 +655,6 @@ func (c *chip8) jpV0Addr(addr uint16) {
 //
 // The interpreter generates a random number from 0 to 255, which is then ANDed with the value kk. The results are stored in Vx. See instruction 8xy2 for more information on AND.
 func (c *chip8) rndVxB(x, b uint8) {
-	c.print("RND V%01X, %d", x, b)
 	c.v[x] = uint8(rand.Uint32()%256) & b
 }
 
@@ -709,9 +670,15 @@ func (c *chip8) rndVxB(x, b uint8) {
 // See instruction 8xy3 for more information on XOR, and section 2.4, Display, for more
 // information on the Chip-8 screen and sprites.
 func (c *chip8) drwVxVyN(x, y, n uint8) {
-	c.print("DRW V%01X, %01X, %d", x, y, n)
-	// TODO
 	c.v[0xF] = 0
+	for i := uint8(0); i < n; i++ {
+		lin := c.v[y] + i
+		b := c.ram[c.i+uint16(i)]
+		for col := c.v[x]; col < c.v[x]+8; col++ {
+			set := b>>(7-col%8)&1 == 1
+			c.screen[lin][col] = set
+		}
+	}
 	c.pc += 2
 }
 
@@ -720,7 +687,6 @@ func (c *chip8) drwVxVyN(x, y, n uint8) {
 //
 // Checks the keyboard, and if the key corresponding to the value of Vx is currently in the down position, PC is increased by 2.
 func (c *chip8) skpVx(x uint8) {
-	c.print("SKP V%01X", x)
 	if c.keypad[x] {
 		c.pc += 2
 	}
@@ -732,7 +698,6 @@ func (c *chip8) skpVx(x uint8) {
 //
 // Checks the keyboard, and if the key corresponding to the value of Vx is currently in the up position, PC is increased by 2.
 func (c *chip8) sknpVx(x uint8) {
-	c.print("SKNP V%01X", x)
 	if !c.keypad[x] {
 		c.pc += 2
 	}
@@ -744,7 +709,6 @@ func (c *chip8) sknpVx(x uint8) {
 //
 // The value of DT is placed into Vx.
 func (c *chip8) ldVxDT(x uint8) {
-	c.print("LD V%01X, DT", x)
 	c.v[x] = c.dt
 	c.pc += 2
 }
@@ -754,8 +718,7 @@ func (c *chip8) ldVxDT(x uint8) {
 //
 // All execution stops until a key is pressed, then the value of that key is stored in Vx.
 func (c *chip8) ldVxK(x uint8) {
-	c.print("LD V%01X, K", x)
-	// TODO
+	panic("todo")
 	var k uint8
 	c.v[x] = k
 	c.pc += 2
@@ -766,7 +729,6 @@ func (c *chip8) ldVxK(x uint8) {
 //
 // DT is set equal to the value of Vx.
 func (c *chip8) ldDTVx(x uint8) {
-	c.print("LD DT, V%01X", x)
 	c.dt = c.v[x]
 	c.pc += 2
 }
@@ -776,7 +738,6 @@ func (c *chip8) ldDTVx(x uint8) {
 //
 // ST is set equal to the value of Vx.
 func (c *chip8) ldSTVx(x uint8) {
-	c.print("LD ST, V%01X", x)
 	c.st = c.v[x]
 	c.pc += 2
 }
@@ -786,7 +747,6 @@ func (c *chip8) ldSTVx(x uint8) {
 //
 // The values of I and Vx are added, and the results are stored in I.
 func (c *chip8) addIVx(x uint8) {
-	c.print("ADD I, V%01X", x)
 	c.i += uint16(c.v[x])
 	c.pc += 2
 }
@@ -798,8 +758,7 @@ func (c *chip8) addIVx(x uint8) {
 // corresponding to the value of Vx. See section 2.4, Display, for more
 // information on the Chip-8 hexadecimal font.
 func (c *chip8) ldFVx(x uint8) {
-	c.print("LD F, V%01X", x)
-	// TODO
+	panic("todo")
 	c.pc += 2
 }
 
@@ -808,7 +767,6 @@ func (c *chip8) ldFVx(x uint8) {
 //
 // The interpreter takes the decimal value of Vx, and places the hundreds digit in memory at location in I, the tens digit at location I+1, and the ones digit at location I+2.
 func (c *chip8) ldBVx(x uint8) {
-	c.print("LD B, V%01X", x)
 	c.pc += 2
 }
 
@@ -817,7 +775,6 @@ func (c *chip8) ldBVx(x uint8) {
 //
 // The interpreter copies the values of registers V0 through Vx into memory, starting at the address in I.
 func (c *chip8) ldIVx(x uint8) {
-	c.print("LD [I], V%01X", x)
 	for i := uint8(0); i <= x; i++ {
 		c.ram[c.i+uint16(i)] = c.v[x]
 	}
@@ -829,7 +786,6 @@ func (c *chip8) ldIVx(x uint8) {
 //
 // The interpreter reads values from memory starting at location I into registers V0 through Vx.
 func (c *chip8) ldVxI(x uint8) {
-	c.print("LD V%01X, [I]", x)
 	for i := uint8(0); i <= x; i++ {
 		c.v[x] = c.ram[c.i+uint16(i)]
 	}

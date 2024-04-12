@@ -5,9 +5,11 @@ import (
 	"flag"
 	"fmt"
 	"log"
-	"math/rand"
 	"os"
 	"os/exec"
+	"time"
+
+	"github.com/gdamore/tcell/v2"
 )
 
 func main() {
@@ -15,53 +17,180 @@ func main() {
 	flag.BoolVar(&step, "step", false, "")
 	flag.Parse()
 
-	c := newChip8()
+	c8 := newChip8()
 	log.SetFlags(0)
 
-	for i := range c.screen {
-		for j := range c.screen[i] {
-			c.screen[i][j] = rand.Float64() > 0.5
-		}
-	}
-
-	b, err := os.ReadFile("invaders.ch8")
+	b, err := os.ReadFile(flag.Arg(0))
 	if err != nil {
 		panic(err)
 	}
 
-	copy(c.ram[0x200:], b)
+	copy(c8.ram[0x200:], b)
+
+	scr, err := tcell.NewScreen()
+	if err != nil {
+		panic(err)
+	}
+	err = scr.Init()
+	if err != nil {
+		panic(err)
+	}
+
+	scr.SetStyle(tcell.StyleDefault.Background(tcell.ColorBlack))
 
 	scanner := bufio.NewScanner(os.Stdin)
 	for {
-		c.step()
+		c8.step()
 		if step {
+			log.Fatal()
 			scanner.Scan()
 		}
 
+		go func() {
+			ev := scr.PollEvent()
+			switch ev := ev.(type) {
+			case *tcell.EventResize:
+				scr.Sync()
+			case *tcell.EventKey:
+				if ev.Key() == tcell.KeyEscape || ev.Key() == tcell.KeyCtrlC {
+					scr.Fini()
+					return
+				}
+
+				// if ev.Rune() == '1'
+			}
+		}()
+
+		for lin := range c8.screen {
+			for col := range c8.screen[lin] {
+				if c8.screen[lin][col] {
+					scr.SetContent(col, lin, ' ', nil, tcell.StyleDefault.Background(tcell.ColorWhite))
+				} else {
+					scr.SetContent(col, lin, ' ', nil, tcell.StyleDefault.Background(tcell.ColorBlack))
+				}
+			}
+		}
+		scr.Show()
 		// c.drawToTerminal()
-		// time.Sleep(time.Millisecond)
+		time.Sleep(200 * time.Microsecond)
 	}
 
 	scanner.Scan()
 }
 
+// if you blur your vision, you'll see it a little better
 var fontSet = []byte{
-	0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
-	0x20, 0x60, 0x20, 0x20, 0x70, // 1
-	0xF0, 0x10, 0xF0, 0x80, 0xF0, // 2
-	0xF0, 0x10, 0xF0, 0x10, 0xF0, // 3
-	0x90, 0x90, 0xF0, 0x10, 0x10, // 4
-	0xF0, 0x80, 0xF0, 0x10, 0xF0, // 5
-	0xF0, 0x80, 0xF0, 0x90, 0xF0, // 6
-	0xF0, 0x10, 0x20, 0x40, 0x40, // 7
-	0xF0, 0x90, 0xF0, 0x90, 0xF0, // 8
-	0xF0, 0x90, 0xF0, 0x10, 0xF0, // 9
-	0xF0, 0x90, 0xF0, 0x90, 0x90, // A
-	0xE0, 0x90, 0xE0, 0x90, 0xE0, // B
-	0xF0, 0x80, 0x80, 0x80, 0xF0, // C
-	0xE0, 0x90, 0x90, 0x90, 0xE0, // D
-	0xF0, 0x80, 0xF0, 0x80, 0xF0, // E
-	0xF0, 0x80, 0xF0, 0x80, 0x80, // F
+	// 0
+	0b11110000,
+	0b10010000,
+	0b10010000,
+	0b10010000,
+	0b11110000,
+
+	// 1
+	0b00100000,
+	0b01100000,
+	0b00100000,
+	0b00100000,
+	0b01110000,
+
+	// 2
+	0b11110000,
+	0b00010000,
+	0b11110000,
+	0b10000000,
+	0b11110000,
+
+	// 3
+	0b11110000,
+	0b00010000,
+	0b11110000,
+	0b00010000,
+	0b11110000,
+
+	// 4
+	0b10010000,
+	0b10010000,
+	0b11110000,
+	0b00010000,
+	0b00010000,
+
+	// 5
+	0b11110000,
+	0b10000000,
+	0b11110000,
+	0b00010000,
+	0b11110000,
+
+	// 6
+	0b11110000,
+	0b10000000,
+	0b11110000,
+	0b10010000,
+	0b11110000,
+
+	// 7
+	0b11110000,
+	0b00010000,
+	0b00100000,
+	0b01000000,
+	0b01000000,
+
+	// 8
+	0b11110000,
+	0b10010000,
+	0b11110000,
+	0b10010000,
+	0b11110000,
+
+	// 9
+	0b11110000,
+	0b10010000,
+	0b11110000,
+	0b00010000,
+	0b11110000,
+
+	// A
+	0b11110000,
+	0b10010000,
+	0b11110000,
+	0b10010000,
+	0b10010000,
+
+	// B
+	0b11100000,
+	0b10010000,
+	0b11100000,
+	0b10010000,
+	0b11100000,
+
+	// C
+	0b11110000,
+	0b10000000,
+	0b10000000,
+	0b10000000,
+	0b11110000,
+
+	// D
+	0b11100000,
+	0b10010000,
+	0b10010000,
+	0b10010000,
+	0b11100000,
+
+	// E
+	0b11110000,
+	0b10000000,
+	0b11110000,
+	0b10000000,
+	0b11110000,
+
+	// F
+	0b11110000,
+	0b10000000,
+	0b11110000,
+	0b10000000,
+	0b10000000,
 }
 
 func newChip8() *chip8 {
@@ -101,13 +230,16 @@ type chip8 struct {
 	ram [4096]uint8
 
 	// state of screen per pixel (on/off)
-	screen [64][32]bool
+	screen [32][64]bool
+}
+
+func (c *chip8) fetch(pc uint16) uint16 {
+	hi, lo := c.ram[pc], c.ram[pc+1]
+	return uint16(hi)<<8 | uint16(lo)
 }
 
 func (c *chip8) step() {
-	hi, lo := c.ram[c.pc], c.ram[c.pc+1]
-	op := uint16(hi)<<8 | uint16(lo)
-
+	op := c.fetch(c.pc)
 	in := parseOpcode(op)
 	if in.id == "" {
 		fmt.Printf("unknown opcode %04x, skipping\n", op)
@@ -115,17 +247,18 @@ func (c *chip8) step() {
 		return
 	}
 
-	log.Print("\033[1;33m" + in.asm + "\033[0m")
+	// log.Print()
+	c.print("\033[1;33m" + in.asm + "\033[0m")
 
 	switch in.id {
 	default:
 		log.Panicf("unknown instruction: %04X, %#v", op, in)
-	case "SYS addr":
-		c.sysAddr(in.addr)
 	case "CLS":
 		c.cls()
 	case "RET":
 		c.ret()
+	case "SYS addr":
+		c.sysAddr(in.addr)
 	case "JP addr":
 		c.jpAddr(in.addr)
 	case "CALL addr":
@@ -140,19 +273,23 @@ func (c *chip8) step() {
 		c.ldVxB(in.x, in.b)
 	case "ADD Vx, byte":
 		c.addVxB(in.x, in.b)
+	case "LD Vx, Vy":
+		c.ldVxVy(in.x, in.y)
 	case "OR Vx, Vy":
 		c.orVxVy(in.x, in.y)
 	case "AND Vx, Vy":
 		c.andVxVy(in.x, in.y)
+	case "XOR Vx, Vy":
+		c.xorVxVy(in.x, in.y)
 	case "ADD Vx, Vy":
 		c.addVxVy(in.x, in.y)
 	case "SUB Vx, Vy":
 		c.subVxVy(in.x, in.y)
-	case "SHR Vx":
+	case "SHR Vx {, Vy}":
 		c.shrVx(in.x)
 	case "SUBN Vx, Vy":
 		c.subnVxVy(in.x, in.y)
-	case "SHL Vx":
+	case "SHL Vx {, Vy}":
 		c.shlVx(in.x)
 	case "SNE Vx, Vy":
 		c.sneVxVy(in.x, in.y)
@@ -197,9 +334,9 @@ func (c *chip8) drawToTerminal() {
 	for x := range c.screen {
 		for _, on := range c.screen[x] {
 			if on {
-				fmt.Print("##")
+				fmt.Print("#")
 			} else {
-				fmt.Print("..")
+				fmt.Print(".")
 			}
 		}
 		fmt.Println()
