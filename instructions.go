@@ -692,7 +692,7 @@ func (c *chip8) drwVxVyN(x, y, n uint8) {
 //
 // Checks the keyboard, and if the key corresponding to the value of Vx is currently in the down position, PC is increased by 2.
 func (c *chip8) skpVx(x uint8) {
-	if c.keypad[x] {
+	if c.keypad[c.v[x]] {
 		c.pc += 2
 	}
 	c.pc += 2
@@ -703,7 +703,7 @@ func (c *chip8) skpVx(x uint8) {
 //
 // Checks the keyboard, and if the key corresponding to the value of Vx is currently in the up position, PC is increased by 2.
 func (c *chip8) sknpVx(x uint8) {
-	if !c.keypad[x] {
+	if !c.keypad[c.v[x]] {
 		c.pc += 2
 	}
 	c.pc += 2
