@@ -117,36 +117,38 @@ func main() {
 		for lin := range c8.screen {
 			for col := range c8.screen[lin] {
 				if c8.screen[lin][col] {
-					scr.SetContent(col, lin, ' ', nil, tcell.StyleDefault.Background(tcell.ColorWhite))
+					scr.SetContent(col*2, lin, ' ', nil, tcell.StyleDefault.Background(tcell.ColorWhite))
+					scr.SetContent(col*2+1, lin, ' ', nil, tcell.StyleDefault.Background(tcell.ColorWhite))
 				} else {
-					scr.SetContent(col, lin, ' ', nil, tcell.StyleDefault.Background(tcell.ColorBlack))
+					scr.SetContent(col*2, lin, ' ', nil, tcell.StyleDefault.Background(tcell.ColorBlack))
+					scr.SetContent(col*2+1, lin, ' ', nil, tcell.StyleDefault.Background(tcell.ColorBlack))
 				}
 			}
 		}
 
 		in := parseOpcode(c8.fetch(c8.pc))
 		if in.id != "" {
-			setText(83, 2, strings.Repeat(" ", 20), tcell.StyleDefault.Foreground(tcell.ColorGreenYellow))
-			setText(83, 2, in.asm, tcell.StyleDefault.Foreground(tcell.ColorGreenYellow))
+			setText(83*2, 2, strings.Repeat(" ", 20), tcell.StyleDefault.Foreground(tcell.ColorGreenYellow))
+			setText(83*2, 2, in.asm, tcell.StyleDefault.Foreground(tcell.ColorGreenYellow))
 		}
 
 		for x := 0; x <= 0xf; x++ {
-			setText(90, 4+2*x, fmt.Sprintf("V%1X: %02X", x, c8.v[x]), tcell.StyleDefault)
+			setText(90*2, 4+2*x, fmt.Sprintf("V%1X: %02X", x, c8.v[x]), tcell.StyleDefault)
 		}
 		for x := 0; x <= 0xf; x++ {
 			k := 0
 			if c8.keypad[x] {
 				k = 1
 			}
-			setText(83, 4+2*x, fmt.Sprintf("K%1X: %1X", x, k), tcell.StyleDefault)
+			setText(83*2, 4+2*x, fmt.Sprintf("K%1X: %1X", x, k), tcell.StyleDefault)
 		}
-		setText(98, 4, fmt.Sprintf("PC: %04X", c8.pc), tcell.StyleDefault)
-		setText(98, 6, fmt.Sprintf("I:   %03X", c8.i), tcell.StyleDefault)
-		setText(98, 8, fmt.Sprintf("RET: %03X", c8.stack[c8.sp]), tcell.StyleDefault)
-		setText(98, 10, fmt.Sprintf("DT:  %02X", c8.dt), tcell.StyleDefault)
-		setText(98, 12, fmt.Sprintf("ST:  %02X", c8.st), tcell.StyleDefault)
-		setText(98, 14, fmt.Sprintf("[I]: %03X", c8.ram[c8.i]), tcell.StyleDefault)
-		setText(98, 16, fmt.Sprintf("[PC]: %04X", c8.fetch(c8.pc)), tcell.StyleDefault)
+		setText(98*2, 4, fmt.Sprintf("PC: %04X", c8.pc), tcell.StyleDefault)
+		setText(98*2, 6, fmt.Sprintf("I:   %03X", c8.i), tcell.StyleDefault)
+		setText(98*2, 8, fmt.Sprintf("RET: %03X", c8.stack[c8.sp]), tcell.StyleDefault)
+		setText(98*2, 10, fmt.Sprintf("DT:  %02X", c8.dt), tcell.StyleDefault)
+		setText(98*2, 12, fmt.Sprintf("ST:  %02X", c8.st), tcell.StyleDefault)
+		setText(98*2, 14, fmt.Sprintf("[I]: %02X", c8.ram[c8.i]), tcell.StyleDefault)
+		setText(98*2, 16, fmt.Sprintf("[PC]: %04X", c8.fetch(c8.pc)), tcell.StyleDefault)
 
 		scr.Show()
 		// c.drawToTerminal()
