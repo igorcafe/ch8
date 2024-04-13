@@ -744,9 +744,9 @@ func (c *chip8) ldFVx(x uint8) {
 //
 // The interpreter takes the decimal value of Vx, and places the hundreds digit in memory at location in I, the tens digit at location I+1, and the ones digit at location I+2.
 func (c *chip8) ldBVx(x uint8) {
-	c.i = uint16(c.v[x] / 100)
-	c.i = uint16(c.v[x] % 100 / 10)
-	c.i = uint16(c.v[x] % 10)
+	c.ram[c.i] = c.v[x] / 100
+	c.ram[c.i+1] = c.v[x] % 100 / 10
+	c.ram[c.i+2] = c.v[x] % 10
 	// panic("todo")
 }
 
