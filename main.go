@@ -318,6 +318,11 @@ func (c *chip8) fetch(pc uint16) uint16 {
 }
 
 func (c *chip8) step() {
+	if c.dt > 0 {
+		c.dt--
+		return
+	}
+
 	op := c.fetch(c.pc)
 	in := parseOpcode(op)
 	c.pc += 2
@@ -404,9 +409,7 @@ func (c *chip8) step() {
 	case "LD Vx, [I]":
 		c.ldVxI(in.x)
 	}
-	if c.dt > 0 {
-		c.dt--
-	}
+
 }
 
 func (c *chip8) drawToTerminal() {
