@@ -656,9 +656,15 @@ func (c *chip8) drwVxVyN(x, y, n uint8) {
 	for i := uint8(0); i < n; i++ {
 		lin := c.v[y] + i
 		b := c.ram[c.i+uint16(i)]
-		for col := c.v[x]; col < c.v[x]+8; col++ {
-			set := b>>(7-col%8)&1 == 1
-			if c.screen[lin][col] && set {
+		for j := uint8(0); j < 8; j++ {
+			col := c.v[x] + j
+			set := b>>(7-j)&1 == 1
+			if !set {
+				continue
+			}
+			col %= 64
+			lin %= 32
+			if c.screen[lin][col] {
 				c.v[0xF] = 1
 				set = false
 			}
