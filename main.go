@@ -69,6 +69,17 @@ func main() {
 		}
 	}
 
+	c8.isKeyDown = func(k uint8) bool {
+		select {
+		case ev := <-events:
+			// todo
+			_, ok := ev.(*tcell.EventKey)
+			return ok
+		default:
+			return false
+		}
+	}
+
 	go func() {
 		for {
 			ev := <-events
