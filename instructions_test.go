@@ -64,3 +64,49 @@ func Test_drwVxVyN(t *testing.T) {
 		}
 	})
 }
+
+func Test_ldBVx(t *testing.T) {
+	t.Parallel()
+
+	t.Run("ge 100", func(t *testing.T) {
+		c8 := newChip8()
+		c8.i = 0
+		c8.v[5] = 123
+		c8.ldBVx(5)
+
+		want := []uint8{1, 2, 3}
+		got := c8.ram[c8.i : c8.i+3]
+
+		if !reflect.DeepEqual(want, got) {
+			t.Fatalf("want: %v, got: %v", want, got)
+		}
+	})
+
+	t.Run("ge 10", func(t *testing.T) {
+		c8 := newChip8()
+		c8.i = 0
+		c8.v[5] = 54
+		c8.ldBVx(5)
+
+		want := []uint8{0, 5, 4}
+		got := c8.ram[c8.i : c8.i+3]
+
+		if !reflect.DeepEqual(want, got) {
+			t.Fatalf("want: %v, got: %v", want, got)
+		}
+	})
+
+	t.Run("lt 10", func(t *testing.T) {
+		c8 := newChip8()
+		c8.i = 0
+		c8.v[5] = 7
+		c8.ldBVx(5)
+
+		want := []uint8{0, 0, 7}
+		got := c8.ram[c8.i : c8.i+3]
+
+		if !reflect.DeepEqual(want, got) {
+			t.Fatalf("want: %v, got: %v", want, got)
+		}
+	})
+}
