@@ -1,12 +1,12 @@
 package main
 
 import (
-	"bufio"
 	"flag"
 	"fmt"
 	"log"
 	"os"
 	"os/exec"
+	"strings"
 	"time"
 
 	"github.com/gdamore/tcell/v2"
@@ -14,6 +14,8 @@ import (
 
 func main() {
 	var step bool
+	var refreshPeriod time.Duration
+	flag.DurationVar(&refreshPeriod, "r", 200*time.Microsecond, "refresh period duration")
 	flag.BoolVar(&step, "step", false, "")
 	flag.Parse()
 
@@ -36,18 +38,40 @@ func main() {
 		panic(err)
 	}
 
+	defer func() {
+		if r := recover(); r != nil {
+			// cancel()
+			scr.Fini()
+			panic(r)
+		}
+	}()
+
 	scr.SetStyle(tcell.StyleDefault.Background(tcell.ColorBlack))
 
-	scanner := bufio.NewScanner(os.Stdin)
-	for {
-		c8.step()
-		if step {
-			log.Fatal()
-			scanner.Scan()
+	setText := func(x, y int, txt string, style tcell.Style) {
+		for i, r := range txt {
+			scr.SetContent(x+i, y, r, nil, style)
 		}
+	}
 
-		go func() {
-			ev := scr.PollEvent()
+	events := make(chan tcell.Event, 0)
+	quit := make(chan struct{}, 0)
+
+	go scr.ChannelEvents(events, quit)
+
+	c8.waitKey = func() {
+		for {
+			ev := <-events
+			if _, ok := ev.(*tcell.EventKey); ok {
+				break
+			}
+			events <- ev
+		}
+	}
+
+	go func() {
+		for {
+			ev := <-events
 			switch ev := ev.(type) {
 			case *tcell.EventResize:
 				scr.Sync()
@@ -57,9 +81,27 @@ func main() {
 					return
 				}
 
-				// if ev.Rune() == '1'
+				for i := range c8.keypad {
+					c8.keypad[i] = true
+				}
+				// if ev.Rune() == ' ' {
+				// 	step = !step
+				// }
 			}
-		}()
+		}
+	}()
+
+	for {
+		now := time.Now()
+
+		c8.step()
+		for step {
+			ev := <-events
+			if _, ok := ev.(*tcell.EventKey); ok {
+				break
+			}
+			events <- ev
+		}
 
 		for lin := range c8.screen {
 			for col := range c8.screen[lin] {
@@ -70,12 +112,35 @@ func main() {
 				}
 			}
 		}
+
+		in := parseOpcode(c8.fetch(c8.pc))
+		if in.id != "" {
+			setText(83, 2, strings.Repeat(" ", 20), tcell.StyleDefault.Foreground(tcell.ColorGreenYellow))
+			setText(83, 2, in.asm, tcell.StyleDefault.Foreground(tcell.ColorGreenYellow))
+		}
+
+		for x := 0; x <= 0xf; x++ {
+			setText(90, 4+2*x, fmt.Sprintf("V%1X: %02X", x, c8.v[x]), tcell.StyleDefault)
+		}
+		for x := 0; x <= 0xf; x++ {
+			k := 0
+			if c8.keypad[x] {
+				k = 1
+			}
+			setText(83, 4+2*x, fmt.Sprintf("K%1X: %1X", x, k), tcell.StyleDefault)
+		}
+		setText(98, 4, fmt.Sprintf("PC: %04X", c8.pc), tcell.StyleDefault)
+		setText(98, 6, fmt.Sprintf("I:   %03X", c8.i), tcell.StyleDefault)
+		setText(98, 8, fmt.Sprintf("RET: %03X", c8.stack[c8.sp]), tcell.StyleDefault)
+		setText(98, 10, fmt.Sprintf("DT:  %02X", c8.dt), tcell.StyleDefault)
+		setText(98, 12, fmt.Sprintf("ST:  %02X", c8.st), tcell.StyleDefault)
+		setText(98, 14, fmt.Sprintf("[I]: %03X", c8.ram[c8.i]), tcell.StyleDefault)
+		setText(98, 16, fmt.Sprintf("[PC]: %04X", c8.fetch(c8.pc)), tcell.StyleDefault)
+
 		scr.Show()
 		// c.drawToTerminal()
-		time.Sleep(200 * time.Microsecond)
+		time.Sleep(refreshPeriod - time.Since(now))
 	}
-
-	scanner.Scan()
 }
 
 // if you blur your vision, you'll see it a little better
@@ -231,6 +296,9 @@ type chip8 struct {
 
 	// state of screen per pixel (on/off)
 	screen [32][64]bool
+
+	isKeyDown func(k uint8) bool
+	waitKey   func()
 }
 
 func (c *chip8) fetch(pc uint16) uint16 {
@@ -242,7 +310,7 @@ func (c *chip8) step() {
 	op := c.fetch(c.pc)
 	in := parseOpcode(op)
 	if in.id == "" {
-		fmt.Printf("unknown opcode %04x, skipping\n", op)
+		log.Panicf("unknown opcode %04x, skipping\n", op)
 		c.pc += 2
 		return
 	}
@@ -323,6 +391,9 @@ func (c *chip8) step() {
 		c.ldIVx(in.x)
 	case "LD Vx, [I]":
 		c.ldVxI(in.x)
+	}
+	if c.dt > 0 {
+		c.dt--
 	}
 }
 

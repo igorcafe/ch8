@@ -723,7 +723,7 @@ func (c *chip8) ldVxDT(x uint8) {
 //
 // All execution stops until a key is pressed, then the value of that key is stored in Vx.
 func (c *chip8) ldVxK(x uint8) {
-	panic("todo")
+	c.waitKey()
 	var k uint8
 	c.v[x] = k
 	c.pc += 2
@@ -763,7 +763,7 @@ func (c *chip8) addIVx(x uint8) {
 // corresponding to the value of Vx. See section 2.4, Display, for more
 // information on the Chip-8 hexadecimal font.
 func (c *chip8) ldFVx(x uint8) {
-	panic("todo")
+	c.i = uint16(c.v[x] * 5)
 	c.pc += 2
 }
 
@@ -772,6 +772,7 @@ func (c *chip8) ldFVx(x uint8) {
 //
 // The interpreter takes the decimal value of Vx, and places the hundreds digit in memory at location in I, the tens digit at location I+1, and the ones digit at location I+2.
 func (c *chip8) ldBVx(x uint8) {
+	panic("todo")
 	c.pc += 2
 }
 
