@@ -309,6 +309,7 @@ func (c *chip8) fetch(pc uint16) uint16 {
 func (c *chip8) step() {
 	op := c.fetch(c.pc)
 	in := parseOpcode(op)
+	c.pc += 2
 	if in.id == "" {
 		log.Panicf("unknown opcode %04x, skipping\n", op)
 		c.pc += 2

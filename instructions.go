@@ -432,7 +432,6 @@ func (c *chip8) cls() {
 			c.screen[x][y] = false
 		}
 	}
-	c.pc += 2
 }
 
 // 00EE - RET
@@ -442,7 +441,6 @@ func (c *chip8) cls() {
 func (c *chip8) ret() {
 	c.pc = c.stack[c.sp]
 	c.sp--
-	c.pc += 2
 }
 
 // 1nnn - JP addr
@@ -472,7 +470,6 @@ func (c *chip8) seVxB(x, b uint8) {
 	if c.v[x] == b {
 		c.pc += 2
 	}
-	c.pc += 2
 }
 
 // 4xkk - SNE Vx, byte
@@ -483,7 +480,6 @@ func (c *chip8) sneVxB(x, b uint8) {
 	if c.v[x] != b {
 		c.pc += 2
 	}
-	c.pc += 2
 }
 
 // 5xy0 - SE Vx, Vy
@@ -494,7 +490,6 @@ func (c *chip8) seVxVy(x, y uint8) {
 	if c.v[x] == c.v[y] {
 		c.pc += 2
 	}
-	c.pc += 2
 }
 
 // 6xkk - LD Vx, byte
@@ -503,7 +498,6 @@ func (c *chip8) seVxVy(x, y uint8) {
 // The interpreter puts the value kk into register Vx.
 func (c *chip8) ldVxB(x, b uint8) {
 	c.v[x] = b
-	c.pc += 2
 }
 
 //
@@ -515,7 +509,6 @@ func (c *chip8) ldVxB(x, b uint8) {
 // Adds the value kk to the value of register Vx, then stores the result in Vx.
 func (c *chip8) addVxB(x, b uint8) {
 	c.v[x] += b
-	c.pc += 2
 }
 
 // 8xy0 - LD Vx, Vy
@@ -524,7 +517,6 @@ func (c *chip8) addVxB(x, b uint8) {
 // Stores the value of register Vy in register Vx.
 func (c *chip8) ldVxVy(x, y uint8) {
 	c.v[x] += c.v[y]
-	c.pc += 2
 }
 
 // 8xy1 - OR Vx, Vy
@@ -535,7 +527,6 @@ func (c *chip8) ldVxVy(x, y uint8) {
 // is 1, then the same bit in the result is also 1. Otherwise, it is 0.
 func (c *chip8) orVxVy(x, y uint8) {
 	c.v[x] |= c.v[y]
-	c.pc += 2
 }
 
 // 8xy2 - AND Vx, Vy
@@ -544,7 +535,6 @@ func (c *chip8) orVxVy(x, y uint8) {
 // Performs a bitwise AND on the values of Vx andVxVy Vy, then stores the result in Vx. A bitwise AND compares the corrseponding bits from two values, andVxVy if both bits are 1, then the same bit in the result is also 1. Otherwise, it is 0.
 func (c *chip8) andVxVy(x, y uint8) {
 	c.v[x] &= c.v[y]
-	c.pc += 2
 }
 
 // 8xy3 - XOR Vx, Vy
@@ -553,7 +543,6 @@ func (c *chip8) andVxVy(x, y uint8) {
 // Performs a bitwise exclusive OR on the values of Vx and Vy, then stores the result in Vx. An exclusive OR compares the corrseponding bits from two values, and if the bits are not both the same, then the corresponding bit in the result is set to 1. Otherwise, it is 0.
 func (c *chip8) xorVxVy(x, y uint8) {
 	c.v[x] ^= c.v[y]
-	c.pc += 2
 }
 
 // 8xy4 - ADD Vx, Vy
@@ -567,7 +556,6 @@ func (c *chip8) addVxVy(x, y uint8) {
 		c.v[0xF] = 1
 	}
 	c.v[x] = vx
-	c.pc += 2
 }
 
 // 8xy5 - SUB Vx, Vy
@@ -580,7 +568,6 @@ func (c *chip8) subVxVy(x, y uint8) {
 		c.v[0xF] = 1
 	}
 	c.v[x] -= c.v[y]
-	c.pc += 2
 }
 
 // 8xy6 - SHR Vx {, Vy}
@@ -593,7 +580,6 @@ func (c *chip8) shrVx(x uint8) {
 		c.v[0xF] = 1
 	}
 	c.v[x] = c.v[x] >> 1
-	c.pc += 2
 }
 
 // 8xy7 - SUBN Vx, Vy
@@ -606,7 +592,6 @@ func (c *chip8) subnVxVy(x, y uint8) {
 		c.v[0xF] = 1
 	}
 	c.v[x] = c.v[y] - c.v[x]
-	c.pc += 2
 }
 
 // 8xyE - SHL Vx {, Vy}
@@ -619,7 +604,6 @@ func (c *chip8) shlVx(x uint8) {
 		c.v[0xF] = 1
 	}
 	c.v[x] = c.v[x] << 1
-	c.pc += 2
 }
 
 // 9xy0 - SNE Vx, Vy
@@ -630,7 +614,6 @@ func (c *chip8) sneVxVy(x, y uint8) {
 	if c.v[x] != c.v[y] {
 		c.pc += 2
 	}
-	c.pc += 2
 }
 
 // Annn - LD I, addr
@@ -639,7 +622,6 @@ func (c *chip8) sneVxVy(x, y uint8) {
 // The value of register I is set to nnn.
 func (c *chip8) ldIAddr(addr uint16) {
 	c.i = addr
-	c.pc += 2
 }
 
 // Bnnn - JP V0, addr
@@ -656,7 +638,6 @@ func (c *chip8) jpV0Addr(addr uint16) {
 // The interpreter generates a random number from 0 to 255, which is then ANDed with the value kk. The results are stored in Vx. See instruction 8xy2 for more information on AND.
 func (c *chip8) rndVxB(x, b uint8) {
 	c.v[x] = uint8(rand.Uint32()%256) & b
-	c.pc += 2
 }
 
 // Dxyn - DRW Vx, Vy, nibble
@@ -684,7 +665,6 @@ func (c *chip8) drwVxVyN(x, y, n uint8) {
 			c.screen[lin][col] = set
 		}
 	}
-	c.pc += 2
 }
 
 // Ex9E - SKP Vx
@@ -692,10 +672,9 @@ func (c *chip8) drwVxVyN(x, y, n uint8) {
 //
 // Checks the keyboard, and if the key corresponding to the value of Vx is currently in the down position, PC is increased by 2.
 func (c *chip8) skpVx(x uint8) {
-	if c.keypad[c.v[x]] {
+	if c.isKeyDown(c.v[x]) {
 		c.pc += 2
 	}
-	c.pc += 2
 }
 
 // ExA1 - SKNP Vx
@@ -703,10 +682,9 @@ func (c *chip8) skpVx(x uint8) {
 //
 // Checks the keyboard, and if the key corresponding to the value of Vx is currently in the up position, PC is increased by 2.
 func (c *chip8) sknpVx(x uint8) {
-	if !c.keypad[c.v[x]] {
+	if !c.isKeyDown(c.v[x]) {
 		c.pc += 2
 	}
-	c.pc += 2
 }
 
 // Fx07 - LD Vx, DT
@@ -715,7 +693,6 @@ func (c *chip8) sknpVx(x uint8) {
 // The value of DT is placed into Vx.
 func (c *chip8) ldVxDT(x uint8) {
 	c.v[x] = c.dt
-	c.pc += 2
 }
 
 // Fx0A - LD Vx, K
@@ -726,7 +703,6 @@ func (c *chip8) ldVxK(x uint8) {
 	c.waitKey()
 	var k uint8
 	c.v[x] = k
-	c.pc += 2
 }
 
 // Fx15 - LD DT, Vx
@@ -735,7 +711,6 @@ func (c *chip8) ldVxK(x uint8) {
 // DT is set equal to the value of Vx.
 func (c *chip8) ldDTVx(x uint8) {
 	c.dt = c.v[x]
-	c.pc += 2
 }
 
 // Fx18 - LD ST, Vx
@@ -744,7 +719,6 @@ func (c *chip8) ldDTVx(x uint8) {
 // ST is set equal to the value of Vx.
 func (c *chip8) ldSTVx(x uint8) {
 	c.st = c.v[x]
-	c.pc += 2
 }
 
 // Fx1E - ADD I, Vx
@@ -753,7 +727,6 @@ func (c *chip8) ldSTVx(x uint8) {
 // The values of I and Vx are added, and the results are stored in I.
 func (c *chip8) addIVx(x uint8) {
 	c.i += uint16(c.v[x])
-	c.pc += 2
 }
 
 // Fx29 - LD F, Vx
@@ -764,7 +737,6 @@ func (c *chip8) addIVx(x uint8) {
 // information on the Chip-8 hexadecimal font.
 func (c *chip8) ldFVx(x uint8) {
 	c.i = uint16(c.v[x] * 5)
-	c.pc += 2
 }
 
 // Fx33 - LD B, Vx
@@ -772,8 +744,10 @@ func (c *chip8) ldFVx(x uint8) {
 //
 // The interpreter takes the decimal value of Vx, and places the hundreds digit in memory at location in I, the tens digit at location I+1, and the ones digit at location I+2.
 func (c *chip8) ldBVx(x uint8) {
-	panic("todo")
-	c.pc += 2
+	c.i = uint16(c.v[x] / 100)
+	c.i = uint16(c.v[x] % 100 / 10)
+	c.i = uint16(c.v[x] % 10)
+	// panic("todo")
 }
 
 // Fx55 - LD [I], Vx
@@ -784,7 +758,6 @@ func (c *chip8) ldIVx(x uint8) {
 	for i := uint8(0); i <= x; i++ {
 		c.ram[c.i+uint16(i)] = c.v[x]
 	}
-	c.pc += 2
 }
 
 // Fx65 - LD Vx, [I]
@@ -795,5 +768,4 @@ func (c *chip8) ldVxI(x uint8) {
 	for i := uint8(0); i <= x; i++ {
 		c.v[x] = c.ram[c.i+uint16(i)]
 	}
-	c.pc += 2
 }
