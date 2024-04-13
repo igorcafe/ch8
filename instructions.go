@@ -766,6 +766,6 @@ func (c *chip8) ldIVx(x uint8) {
 // The interpreter reads values from memory starting at location I into registers V0 through Vx.
 func (c *chip8) ldVxI(x uint8) {
 	for i := uint8(0); i <= x; i++ {
-		c.v[x] = c.ram[c.i+uint16(i)]
+		c.v[i] = c.ram[c.i+uint16(i)]
 	}
 }
