@@ -262,7 +262,7 @@ func parseOpcode(op uint16) instruction {
 	}
 
 	// Cxkk - RND Vx, byte
-	if op&0xF000 == 0xA000 {
+	if op&0xF000 == 0xC000 {
 		x := uint8((op >> 8) & 0xF)
 		b := uint8(op & 0xFF)
 		return instruction{
@@ -656,6 +656,7 @@ func (c *chip8) jpV0Addr(addr uint16) {
 // The interpreter generates a random number from 0 to 255, which is then ANDed with the value kk. The results are stored in Vx. See instruction 8xy2 for more information on AND.
 func (c *chip8) rndVxB(x, b uint8) {
 	c.v[x] = uint8(rand.Uint32()%256) & b
+	c.pc += 2
 }
 
 // Dxyn - DRW Vx, Vy, nibble
