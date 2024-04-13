@@ -516,7 +516,7 @@ func (c *chip8) addVxB(x, b uint8) {
 //
 // Stores the value of register Vy in register Vx.
 func (c *chip8) ldVxVy(x, y uint8) {
-	c.v[x] += c.v[y]
+	c.v[x] = c.v[y]
 }
 
 // 8xy1 - OR Vx, Vy
